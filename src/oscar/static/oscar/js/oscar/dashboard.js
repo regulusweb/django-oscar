@@ -233,8 +233,8 @@ var oscar = (function(o, $) {
 
             toggleOptionGroup: function(type_select){
                 var option_group_select = $('#' + type_select.attr('id').replace('type', 'option_group'));
-
-                if(type_select.val() === 'option'){
+                var value = type_select.val();
+                if(value === 'option' || value === 'multi_option'){
                     option_group_select.select2('container').show();
                 }else{
                     option_group_select.select2('container').hide();
