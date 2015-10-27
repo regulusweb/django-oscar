@@ -333,7 +333,7 @@ class ProfileUpdateView(PageTitleMixin, generic.FormView):
             ctx = {
                 'user': self.request.user,
                 'site': get_current_site(self.request),
-                'reset_url': get_password_reset_url(old_user),
+                'reset_url': self.get_reset_url(old_user, self.request),
                 'new_email': new_email,
             }
             msgs = CommunicationEventType.objects.get_and_render(
@@ -342,6 +342,10 @@ class ProfileUpdateView(PageTitleMixin, generic.FormView):
 
         messages.success(self.request, _("Profile updated"))
         return redirect(self.get_success_url())
+
+    def get_reset_url(self, user, request):
+        relative_url = get_password_reset_url(request.user)
+        return request.build_absolute_uri(relative_url)
 
 
 class ProfileDeleteView(PageTitleMixin, generic.FormView):
@@ -384,13 +388,17 @@ class ChangePasswordView(PageTitleMixin, generic.FormView):
         ctx = {
             'user': self.request.user,
             'site': get_current_site(self.request),
-            'reset_url': get_password_reset_url(self.request.user),
+            'reset_url': self.get_reset_url(self.request.user, self.request),
         }
         msgs = CommunicationEventType.objects.get_and_render(
             code=self.communication_type_code, context=ctx)
         Dispatcher().dispatch_user_messages(self.request.user, msgs)
 
         return redirect(self.get_success_url())
+
+    def get_reset_url(self, user, request):
+        relative_url = get_password_reset_url(request.user)
+        return request.build_absolute_uri(relative_url)
 
 
 # =============
