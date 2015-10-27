@@ -256,6 +256,17 @@ class OrderPlacementMixin(CheckoutSessionMixin):
     def get_success_url(self):
         return reverse('checkout:thank-you')
 
+    def get_status_url(self, request):
+        try:
+            path = reverse('customer:anon-order',
+                           kwargs={'order_number': order.number,
+                                   'hash': order.verification_hash()})
+        except NoReverseMatch:
+            # We don't care that much if we can't resolve the URL
+            return None
+        else:
+            return request.build_absolute_uri(path)
+
     def send_confirmation_message(self, order, code, **kwargs):
         ctx = self.get_message_context(order)
         try:
@@ -288,18 +299,8 @@ class OrderPlacementMixin(CheckoutSessionMixin):
         }
 
         if not self.request.user.is_authenticated():
-            # Attempt to add the anon order status URL to the email template
-            # ctx.
-            try:
-                path = reverse('customer:anon-order',
-                               kwargs={'order_number': order.number,
-                                       'hash': order.verification_hash()})
-            except NoReverseMatch:
-                # We don't care that much if we can't resolve the URL
-                pass
-            else:
-                site = Site.objects.get_current()
-                ctx['status_url'] = 'http://%s%s' % (site.domain, path)
+            # Attempt to add the anon order status URL to the email ctx.
+            ctx['status_url'] = self.get_status_url(self.request)
         return ctx
 
     # Basket helpers
