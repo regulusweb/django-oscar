@@ -256,7 +256,7 @@ class OrderPlacementMixin(CheckoutSessionMixin):
     def get_success_url(self):
         return reverse('checkout:thank-you')
 
-    def get_status_url(self, request):
+    def get_status_url(self, request, order):
         try:
             path = reverse('customer:anon-order',
                            kwargs={'order_number': order.number,
@@ -300,7 +300,7 @@ class OrderPlacementMixin(CheckoutSessionMixin):
 
         if not self.request.user.is_authenticated():
             # Attempt to add the anon order status URL to the email ctx.
-            ctx['status_url'] = self.get_status_url(self.request)
+            ctx['status_url'] = self.get_status_url(self.request, order)
         return ctx
 
     # Basket helpers
