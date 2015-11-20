@@ -32,7 +32,7 @@ class GetParametersNode(template.Node):
             del getvars[self.field]
 
         if len(getvars.keys()) > 0:
-            get_params = "%s&" % getvars.urlencode()
+            get_params = "%s&amp;" % getvars.urlencode()
         else:
             get_params = ''
 
