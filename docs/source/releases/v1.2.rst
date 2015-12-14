@@ -60,12 +60,31 @@ Backwards incompatible changes in Oscar 1.2
   removed, it's not needed any more. Just use ``styles`` instead if you
   happened to use it.
 
+- The `keywords` block is removed from the main template (`#1799`)
+
 - The US and Demo sites were both removed from the repository as they 
   were not up-to-date anymore. These might return in the future as 
   separate repositories.
+
+- The `RecentReviewsManager`, `TopScoredReviewsManager` and 
+  `TopVotedReviewsManager` managers are removed from the reviews app 
+  since they were broken and unused.
 
 
 Misc
 ~~~~
  
 * JQuery UI is no longer included in the dashboard (`#1792`)
+
+Undocumented
+~~~~~~~~~~~~
+
+We merged the work below, but haven't yet gotten around to documenting it.
+https://github.com/django-oscar/django-oscar/issues/1935
+https://github.com/django-oscar/django-oscar/pull/1936
+
+https://github.com/django-oscar/django-oscar/issues/1929
+https://github.com/django-oscar/django-oscar/issues/1930
+
+https://github.com/django-oscar/django-oscar/issues/1925
+https://github.com/django-oscar/django-oscar/pull/1926
