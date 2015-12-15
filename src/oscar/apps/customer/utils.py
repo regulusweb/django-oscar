@@ -21,45 +21,52 @@ class Dispatcher(object):
 
     # Public API methods
 
-    def dispatch_direct_messages(self, recipient, messages):
+    def dispatch_direct_messages(self, recipient, messages,
+                                 email_connection=None):
         """
         Dispatch one-off messages to explicitly specified recipient(s).
         """
         if messages['subject'] and messages['body']:
-            self.send_email_messages(recipient, messages)
+            self.send_email_messages(recipient, messages,
+                                     connection=email_connection)
 
     def dispatch_order_messages(self, order, messages, event_type=None,
-                                **kwargs):
+                                email_connection=None, **kwargs):
         """
         Dispatch order-related messages to the customer
         """
         if order.is_anonymous:
-            if 'email_address' in kwargs:
-                self.send_email_messages(kwargs['email_address'], messages)
-            elif order.guest_email:
-                self.send_email_messages(order.guest_email, messages)
-            else:
+            try:
+                recipient = kwargs['email_address']
+            except KeyError:
+                recipient = order.guest_email
+            except AttributeError:
                 return
+            else:
+                self.send_email_messages(recipient, messages,
+                                         connection=email_connection)
         else:
-            self.dispatch_user_messages(order.user, messages)
+            self.dispatch_user_messages(order.user, messages,
+                                        connection=email_connection)
 
         # Create order communications event for audit
         if event_type is not None:
             CommunicationEvent._default_manager.create(
                 order=order, event_type=event_type)
 
-    def dispatch_user_messages(self, user, messages):
+    def dispatch_user_messages(self, user, messages, email_connection=None):
         """
         Send messages to a site user
         """
         if messages['subject'] and (messages['body'] or messages['html']):
-            self.send_user_email_messages(user, messages)
+            self.send_user_email_messages(user, messages,
+                                          connection=email_connection)
         if messages['sms']:
             self.send_text_message(user, messages['sms'])
 
     # Internal
 
-    def send_user_email_messages(self, user, messages):
+    def send_user_email_messages(self, user, messages, email_connection=None):
         """
         Sends message to the registered user / customer and collects data in
         database
@@ -69,7 +76,8 @@ class Dispatcher(object):
                                 " no email address", user.id)
             return
 
-        email = self.send_email_messages(user.email, messages)
+        email = self.send_email_messages(user.email, messages,
+                                         connection=email_connection)
 
         # Is user is signed in, record the event for audit
         if email and user.is_authenticated():
@@ -78,7 +86,7 @@ class Dispatcher(object):
                                           body_text=email.body,
                                           body_html=messages['html'])
 
-    def send_email_messages(self, recipient, messages):
+    def send_email_messages(self, recipient, messages, connection=None):
         """
         Plain email sending to the specified recipient
         """
@@ -92,13 +100,15 @@ class Dispatcher(object):
             email = EmailMultiAlternatives(messages['subject'],
                                            messages['body'],
                                            from_email=from_email,
-                                           to=[recipient])
+                                           to=[recipient],
+                                           connection=connection)
             email.attach_alternative(messages['html'], "text/html")
         else:
             email = EmailMessage(messages['subject'],
                                  messages['body'],
                                  from_email=from_email,
-                                 to=[recipient])
+                                 to=[recipient],
+                                 connection=connection)
         self.logger.info("Sending email to %s" % recipient)
         email.send()
 
