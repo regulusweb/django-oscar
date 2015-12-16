@@ -47,7 +47,7 @@ class Dispatcher(object):
                                          connection=email_connection)
         else:
             self.dispatch_user_messages(order.user, messages,
-                                        connection=email_connection)
+                                        email_connection=email_connection)
 
         # Create order communications event for audit
         if event_type is not None:
@@ -60,7 +60,7 @@ class Dispatcher(object):
         """
         if messages['subject'] and (messages['body'] or messages['html']):
             self.send_user_email_messages(user, messages,
-                                          connection=email_connection)
+                                          email_connection=email_connection)
         if messages['sms']:
             self.send_text_message(user, messages['sms'])
 
