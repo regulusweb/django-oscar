@@ -111,7 +111,7 @@ def send_product_alerts(product):
         messages = event_type.get_messages(ctx)
         if messages and messages['body']:
             num_emails += 1
-            Dispatcher().dispatch_direct_messages(alert.email,
+            Dispatcher().dispatch_direct_messages(alert.get_email_address(),
                                                   messages,
                                                   email_connection=connection)
         # Deactivate the alert for the current user
