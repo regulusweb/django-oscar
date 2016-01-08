@@ -42,13 +42,12 @@ class Dispatcher(object):
                 recipient = order.guest_email
             except AttributeError:
                 return
-            else:
-                self.send_email_messages(recipient, messages,
+
+            self.send_email_messages(recipient, messages,
                                          connection=email_connection)
         else:
             self.dispatch_user_messages(order.user, messages,
                                         email_connection=email_connection)
-
         # Create order communications event for audit
         if event_type is not None:
             CommunicationEvent._default_manager.create(
