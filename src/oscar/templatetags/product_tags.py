@@ -1,5 +1,6 @@
 from django import template
 from django.template.loader import select_template
+from django.utils.text import get_valid_filename
 
 register = template.Library()
 
@@ -18,7 +19,7 @@ def render_product(context, product):
         # database...
         return ''
 
-    names = ['catalogue/partials/product/upc-%s.html' % product.upc,
+    names = ['catalogue/partials/product/upc-%s.html' % get_valid_filename(product.upc),
              'catalogue/partials/product/class-%s.html'
              % product.get_product_class().slug,
              'catalogue/partials/product.html']
