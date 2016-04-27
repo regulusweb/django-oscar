@@ -32,7 +32,7 @@ setup(name='django-oscar',
       install_requires=[
           'django>=1.8.8,<1.10',
           # PIL is required for image fields, Pillow is the "friendly" PIL fork
-          'pillow==3.0.0',
+          'pillow==3.2.0',
           # We use the ModelFormSetView from django-extra-views for the basket
           # page. > 0.6.5 has a bug which causes issues with Django > 1.6,
           # https://github.com/AndrewIngram/django-extra-views/issues/114
