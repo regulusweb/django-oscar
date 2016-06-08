@@ -78,7 +78,7 @@
                             {% if not review.is_anonymous %}
                                 <a href="{% url 'dashboard:user-detail' pk=review.user.id %}">{{ review.reviewer_name }}</a>
                             {% else %}
-                                {{ review.name }}
+                                {{ review.name }} <br/><a href="mailto:{{ review.email }}">{{ review.email }}
                             {% endif %}
                         </td>
                         <td>
