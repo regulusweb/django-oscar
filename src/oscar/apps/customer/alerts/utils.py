@@ -86,38 +86,39 @@ def send_product_alerts(product):
     num_notifications = 0
     selector = Selector()
 
-    # Open a persistent SMTP connection
-    connection = mail.get_connection()
-    connection.open() # Remember to close after the loop
+    if num_alerts:
+        # Open a persistent SMTP connection
+        connection = mail.get_connection()
+        connection.open() # Remember to close after the loop
 
-    for alert in alerts:
-        # Check if the product is available to this user
-        strategy = selector.strategy(user=alert.user)
-        data = strategy.fetch_for_product(product)
+        for alert in alerts:
+            # Check if the product is available to this user
+            strategy = selector.strategy(user=alert.user)
+            data = strategy.fetch_for_product(product)
 
-        if not data.availability.is_available_to_buy:
-            continue
+            if not data.availability.is_available_to_buy:
+                continue
 
-        ctx = Context({
-            'alert': alert,
-            'site': Site.objects.get_current(),
-            'hurry': hurry_mode,
-        })
-        if alert.user:
-            # Send a site notification
-            num_notifications += 1
-            services.notify_user(alert.user, message_tpl.render(ctx))
+            ctx = Context({
+                'alert': alert,
+                'site': Site.objects.get_current(),
+                'hurry': hurry_mode,
+            })
+            if alert.user:
+                # Send a site notification
+                num_notifications += 1
+                services.notify_user(alert.user, message_tpl.render(ctx))
 
-        messages = event_type.get_messages(ctx)
-        if messages and messages['body']:
-            num_emails += 1
-            Dispatcher().dispatch_direct_messages(alert.get_email_address(),
-                                                  messages,
-                                                  email_connection=connection)
-        # Deactivate the alert for the current user
-        alert.close()
+            messages = event_type.get_messages(ctx)
+            if messages and messages['body']:
+                num_emails += 1
+                Dispatcher().dispatch_direct_messages(alert.get_email_address(),
+                                                      messages,
+                                                      email_connection=connection)
+            # Deactivate the alert for the current user
+            alert.close()
 
-    connection.close()
+        connection.close()
 
     logger.info("Sent %d notifications and %d emails", num_notifications,
                 num_emails)
