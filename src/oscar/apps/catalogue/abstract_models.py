@@ -20,7 +20,6 @@ from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import get_language, pgettext_lazy
-
 from treebeard.mp_tree import MP_Node
 
 from oscar.core.decorators import deprecated
@@ -28,6 +27,7 @@ from oscar.core.loading import get_class, get_classes, get_model
 from oscar.core.utils import slugify
 from oscar.core.validators import non_python_keyword
 from oscar.models.fields import AutoSlugField, NullCharField
+from oscar.models.fields.slugfield import SlugField
 
 ProductManager, BrowsableProductManager = get_classes(
     'catalogue.managers', ['ProductManager', 'BrowsableProductManager'])
@@ -93,7 +93,7 @@ class AbstractCategory(MP_Node):
     description = models.TextField(_('Description'), blank=True)
     image = models.ImageField(_('Image'), upload_to='categories', blank=True,
                               null=True, max_length=255)
-    slug = models.SlugField(_('Slug'), max_length=255, db_index=True)
+    slug = SlugField(_('Slug'), max_length=255, db_index=True)
 
     _slug_separator = '/'
     _full_name_separator = ' > '
@@ -677,8 +677,7 @@ class AbstractProduct(models.Model):
 
     @cached_property
     def num_approved_reviews(self):
-        return self.reviews.filter(
-            status=self.reviews.model.APPROVED).count()
+        return self.reviews.approved().count()
 
 
 class AbstractProductRecommendation(models.Model):
