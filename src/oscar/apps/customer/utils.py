@@ -26,7 +26,7 @@ class Dispatcher(object):
         """
         Dispatch one-off messages to explicitly specified recipient(s).
         """
-        if messages['subject'] and messages['body']:
+        if messages['subject'] and (messages['body'] or messages['html']):
             self.send_email_messages(recipient, messages,
                                      connection=email_connection)
 
