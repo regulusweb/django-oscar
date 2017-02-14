@@ -7,6 +7,7 @@ from django.core.urlresolvers import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
+from oscar.core.compat import user_is_authenticated
 from oscar.core.loading import get_model
 
 CommunicationEvent = get_model('order', 'CommunicationEvent')
@@ -79,7 +80,7 @@ class Dispatcher(object):
                                          connection=email_connection)
 
         # Is user is signed in, record the event for audit
-        if email and user.is_authenticated():
+        if email and user_is_authenticated(user):
             Email._default_manager.create(user=user,
                                           subject=email.subject,
                                           body_text=email.body,

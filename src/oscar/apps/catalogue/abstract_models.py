@@ -22,7 +22,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import get_language, pgettext_lazy
 from treebeard.mp_tree import MP_Node
 
-from oscar.core.decorators import deprecated
+from oscar.core.compat import user_is_anonymous, user_is_authenticated
 from oscar.core.loading import get_class, get_classes, get_model
 from oscar.core.utils import slugify
 from oscar.core.validators import non_python_keyword
@@ -225,9 +225,14 @@ class AbstractProductCategory(models.Model):
     """
     Joining model between products and categories. Exists to allow customising.
     """
-    product = models.ForeignKey('catalogue.Product', verbose_name=_("Product"))
-    category = models.ForeignKey('catalogue.Category',
-                                 verbose_name=_("Category"))
+    product = models.ForeignKey(
+        'catalogue.Product',
+        on_delete=models.CASCADE,
+        verbose_name=_("Product"))
+    category = models.ForeignKey(
+        'catalogue.Category',
+        on_delete=models.CASCADE,
+        verbose_name=_("Category"))
 
     class Meta:
         abstract = True
@@ -274,7 +279,11 @@ class AbstractProduct(models.Model):
                     " supplier. Eg an ISBN for a book."))
 
     parent = models.ForeignKey(
-        'self', null=True, blank=True, related_name='children',
+        'self',
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name='children',
         verbose_name=_("Parent product"),
         help_text=_("Only choose a parent product if you're creating a child "
                     "product.  For example if this is a size "
@@ -291,7 +300,10 @@ class AbstractProduct(models.Model):
     #: "Kind" of product, e.g. T-Shirt, Book, etc.
     #: None for child products, they inherit their parent's product class
     product_class = models.ForeignKey(
-        'catalogue.ProductClass', null=True, blank=True, on_delete=models.PROTECT,
+        'catalogue.ProductClass',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
         verbose_name=_('Product type'), related_name="products",
         help_text=_("Choose what type of product this is"))
     attributes = models.ManyToManyField(
@@ -508,56 +520,6 @@ class AbstractProduct(models.Model):
         pairs = [attribute.summary() for attribute in attributes]
         return ", ".join(pairs)
 
-    # The two properties below are deprecated because determining minimum
-    # price is not as trivial as it sounds considering multiple stockrecords,
-    # currencies, tax, etc.
-    # The current implementation is very naive and only works for a limited
-    # set of use cases.
-    # At the very least, we should pass in the request and
-    # user. Hence, it's best done as an extension to a Strategy class.
-    # Once that is accomplished, these properties should be removed.
-
-    @property
-    @deprecated
-    def min_child_price_incl_tax(self):
-        """
-        Return minimum child product price including tax.
-        """
-        return self._min_child_price('incl_tax')
-
-    @property
-    @deprecated
-    def min_child_price_excl_tax(self):
-        """
-        Return minimum child product price excluding tax.
-
-        This is a very naive approach; see the deprecation notice above. And
-        only use it for display purposes (e.g. "new Oscar shirt, prices
-        starting from $9.50").
-        """
-        return self._min_child_price('excl_tax')
-
-    def _min_child_price(self, prop):
-        """
-        Return minimum child product price.
-
-        This is for visual purposes only. It ignores currencies, most of the
-        Strategy logic for selecting stockrecords, knows nothing about the
-        current user or request, etc. It's only here to ensure
-        backwards-compatibility; the previous implementation wasn't any
-        better.
-        """
-        strategy = Selector().strategy()
-
-        children_stock = strategy.select_children_stockrecords(self)
-        prices = [
-            strategy.pricing_policy(child, stockrecord)
-            for child, stockrecord in children_stock]
-        raw_prices = sorted([getattr(price, prop) for price in prices])
-        return raw_prices[0] if raw_prices else None
-
-    # Wrappers for child products
-
     def get_title(self):
         """
         Return a product's title or it's parent's title if it has no title
@@ -662,7 +624,7 @@ class AbstractProduct(models.Model):
         return rating
 
     def has_review_by(self, user):
-        if user.is_anonymous():
+        if user_is_anonymous(user):
             return False
         return self.reviews.filter(user=user).exists()
 
@@ -676,7 +638,7 @@ class AbstractProduct(models.Model):
         Override this if you want to alter the default behaviour; e.g. enforce
         that a user purchased the product to be allowed to leave a review.
         """
-        if user.is_authenticated() or settings.OSCAR_ALLOW_ANON_REVIEWS:
+        if user_is_authenticated(user) or settings.OSCAR_ALLOW_ANON_REVIEWS:
             return not self.has_review_by(user)
         else:
             return False
@@ -691,10 +653,14 @@ class AbstractProductRecommendation(models.Model):
     'Through' model for product recommendations
     """
     primary = models.ForeignKey(
-        'catalogue.Product', related_name='primary_recommendations',
+        'catalogue.Product',
+        on_delete=models.CASCADE,
+        related_name='primary_recommendations',
         verbose_name=_("Primary product"))
     recommendation = models.ForeignKey(
-        'catalogue.Product', verbose_name=_("Recommended product"))
+        'catalogue.Product',
+        on_delete=models.CASCADE,
+        verbose_name=_("Recommended product"))
     ranking = models.PositiveSmallIntegerField(
         _('Ranking'), default=0,
         help_text=_('Determines order of the products. A product with a higher'
@@ -716,8 +682,12 @@ class AbstractProductAttribute(models.Model):
     a 'book' class)
     """
     product_class = models.ForeignKey(
-        'catalogue.ProductClass', related_name='attributes', blank=True,
-        null=True, verbose_name=_("Product type"))
+        'catalogue.ProductClass',
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='attributes',
+        null=True,
+        verbose_name=_("Product type"))
     name = models.CharField(_('Name'), max_length=128)
     code = models.SlugField(
         _('Code'), max_length=128,
@@ -760,7 +730,10 @@ class AbstractProductAttribute(models.Model):
         max_length=20, verbose_name=_("Type"))
 
     option_group = models.ForeignKey(
-        'catalogue.AttributeOptionGroup', blank=True, null=True,
+        'catalogue.AttributeOptionGroup',
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
         verbose_name=_("Option Group"),
         help_text=_('Select an option group if using type "Option" or "Multi Option"'))
     required = models.BooleanField(_('Required'), default=False)
@@ -913,9 +886,13 @@ class AbstractProductAttributeValue(models.Model):
     For example: number_of_pages = 295
     """
     attribute = models.ForeignKey(
-        'catalogue.ProductAttribute', verbose_name=_("Attribute"))
+        'catalogue.ProductAttribute',
+        on_delete=models.CASCADE,
+        verbose_name=_("Attribute"))
     product = models.ForeignKey(
-        'catalogue.Product', related_name='attribute_values',
+        'catalogue.Product',
+        on_delete=models.CASCADE,
+        related_name='attribute_values',
         verbose_name=_("Product"))
 
     value_text = models.TextField(_('Text'), blank=True, null=True)
@@ -929,7 +906,10 @@ class AbstractProductAttributeValue(models.Model):
         related_name='multi_valued_attribute_values',
         verbose_name=_("Value multi option"))
     value_option = models.ForeignKey(
-        'catalogue.AttributeOption', blank=True, null=True,
+        'catalogue.AttributeOption',
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
         verbose_name=_("Value option"))
     value_file = models.FileField(
         upload_to=settings.OSCAR_IMAGE_FOLDER, max_length=255,
@@ -941,7 +921,11 @@ class AbstractProductAttributeValue(models.Model):
         'entity_content_type', 'entity_object_id')
 
     entity_content_type = models.ForeignKey(
-        ContentType, null=True, blank=True, editable=False)
+        ContentType,
+        blank=True,
+        editable=False,
+        on_delete=models.CASCADE,
+        null=True)
     entity_object_id = models.PositiveIntegerField(
         null=True, blank=True, editable=False)
 
@@ -1050,7 +1034,9 @@ class AbstractAttributeOption(models.Model):
     Examples: In a Language group, English, Greek, French
     """
     group = models.ForeignKey(
-        'catalogue.AttributeOptionGroup', related_name='options',
+        'catalogue.AttributeOptionGroup',
+        on_delete=models.CASCADE,
+        related_name='options',
         verbose_name=_("Group"))
     option = models.CharField(_('Option'), max_length=255)
 
@@ -1148,7 +1134,10 @@ class AbstractProductImage(models.Model):
     An image of a product
     """
     product = models.ForeignKey(
-        'catalogue.Product', related_name='images', verbose_name=_("Product"))
+        'catalogue.Product',
+        on_delete=models.CASCADE,
+        related_name='images',
+        verbose_name=_("Product"))
     original = models.ImageField(
         _("Original"), upload_to=settings.OSCAR_IMAGE_FOLDER, max_length=255)
     caption = models.CharField(_("Caption"), max_length=200, blank=True)

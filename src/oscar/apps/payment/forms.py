@@ -44,7 +44,7 @@ class BankcardNumberField(forms.CharField):
         card types we accept
         """
         non_decimal = re.compile(r'\D+')
-        value = non_decimal.sub('', value.strip())
+        value = non_decimal.sub('', (value or '').strip())
 
         if value and not bankcards.luhn(value):
             raise forms.ValidationError(
@@ -205,7 +205,8 @@ class BankcardCCVField(forms.RegexField):
             'required': True,
             'label': _("CCV number"),
             'widget': forms.TextInput(attrs={'size': '5'}),
-            'error_message': _("Please enter a 3 or 4 digit number"),
+            'error_messages': {
+                'invalid': _("Please enter a 3 or 4 digit number")},
             'help_text': _("This is the 3 or 4 digit security number "
                            "on the back of your bankcard")
         }
