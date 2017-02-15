@@ -10,6 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('catalogue', '0007_auto_20151207_1440'),
+        ('catalogue', '0007_auto_20150828_1607'),
     ]
 
     operations = [
